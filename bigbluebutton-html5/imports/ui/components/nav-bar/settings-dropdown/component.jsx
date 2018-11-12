@@ -130,7 +130,10 @@ class SettingsDropdown extends Component {
         icon="help"
         label={intl.formatMessage(intlMessages.helpLabel)}
         description={intl.formatMessage(intlMessages.helpDesc)}
-        onClick={() => window.open('https://bigbluebutton.org/videos/')}
+        onClick={() => window.open('https://kvc1.live-tutor.com/check/')}
+        //onClick={() => window.open('https://kvc2.livetutoredu.com/check/')}
+        //onClick={() => window.open('https://lvc1.livetutoredu.com/check/')}
+        
       />),
       (<DropdownListItem
         key={_.uniqueId('list-item-')}

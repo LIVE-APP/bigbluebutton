@@ -4,7 +4,8 @@ import mapUser from '/imports/ui/services/user/mapUser';
 import Auth from '/imports/ui/services/auth';
 
 const endMeeting = () => {
-  makeCall('endMeeting', Auth.credentials);
+  //makeCall('endMeeting', Auth.credentials);
+  enMeeting('endMeeting', Auth.credentials);
 };
 
 const isModerator = () => {

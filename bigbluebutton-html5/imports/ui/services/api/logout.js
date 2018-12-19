@@ -1,5 +1,6 @@
 var kaaryinClients = [];
 kaaryinClients[0] = "https://kaaryin.com/";
+kaaryinClients[11] = "https://kaaryin.com/";
 kaaryinClients[1] = "http://local.kaaryin.com/";
 kaaryinClients[2] = "http://sollers.kaaryin.com/sollers/web/";
 kaaryinClients[3] = "http://asianet.kaaryin.com/asianet/web/";
@@ -55,6 +56,13 @@ $(window).load(function(){
     window.BBBLog = BBBLog;
 })(this);
 
+
+		console.log( "error" );
+	})
+	.always(function() {
+		console.log( "complete" );
+	});
+});
 function initLTActions(data){
 	var myRole = data.role;
 	if(myRole == 'MODERATOR'){
@@ -88,10 +96,12 @@ function setHostLinks(){
 	});
 }
 function enMeeting(){
+export function enMeeting(){
 	if(confirm('This action will end this live-session & exit all the participants from it. Do you really want to proceed?')){
 		window.location.href = window.endMeetingUrl;
 	}
 	else{
 		return false;
 	}
+}	
 }	

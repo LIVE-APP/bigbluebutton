@@ -58,7 +58,9 @@ public class PdfToSwfSlidesGenerationService {
   private String BLANK_SLIDE;
   private int MAX_SWF_FILE_SIZE;
   private boolean svgImagesRequired;
+
   private boolean generatePngs;
+
 
   public PdfToSwfSlidesGenerationService(int numConversionThreads) {
     executor = Executors.newFixedThreadPool(numConversionThreads);

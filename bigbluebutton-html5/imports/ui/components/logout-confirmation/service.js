@@ -7,6 +7,9 @@ import enMeeting  from '/imports/ui/services/api/logout';
 const endMeeting = () => {
 //  makeCall('endMeeting', Auth.credentials);
 enMeeting('endMeeting', Auth.credentials);
+
+  //makeCall('endMeeting', Auth.credentials);
+  
 };
 
 const isModerator = () => {

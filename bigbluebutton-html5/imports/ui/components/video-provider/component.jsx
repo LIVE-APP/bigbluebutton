@@ -400,6 +400,8 @@ class VideoProvider extends Component {
 
     this.webRtcPeers[id] = {};
 
+    this.webRtcPeers[id] = {};;
+
     try {
       iceServers = await fetchWebRTCMappedStunTurnServers(sessionToken);
     } catch (error) {

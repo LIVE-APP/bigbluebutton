@@ -59,7 +59,7 @@ class ActionsBar extends React.PureComponent {
         </div>
         <div className={isUserPresenter ? cx(styles.centerWithActions, actionBarClasses) : styles.center}>
           <AudioControlsContainer />
-          {enableVideo ?
+         
           {/* livetutorEdu Changes for Webcam only for presenter*/}
           {/*isUserPresenter && Meteor.settings.public.kurento.enableVideo ?*/}
           {Meteor.settings.public.kurento.enableVideo ?

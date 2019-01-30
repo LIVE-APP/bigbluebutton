@@ -1,6 +1,5 @@
 var kaaryinClients = [];
 kaaryinClients[0] = "https://kaaryin.com/";
-kaaryinClients[11] = "https://kaaryin.com/";
 kaaryinClients[1] = "http://local.kaaryin.com/";
 kaaryinClients[2] = "http://sollers.kaaryin.com/sollers/web/";
 kaaryinClients[3] = "http://asianet.kaaryin.com/asianet/web/";
@@ -10,9 +9,6 @@ kaaryinClients[6] = "http://asianet.live-tutor.com/asianet/courses/";
 kaaryinClients[7] = "http://myconf.live-tutor.com/";
 kaaryinClients[9] = "http://livetutoredu.com/";
 kaaryinClients[10] = "http://tia.kaaryin.com/";
-kaaryinClients[11] = "http://in.eduraaga.com/";
-kaaryinClients[12] = "http://us.eduraaga.com/";
-
 $(window).load(function(){
 	$.ajax({
 		method: "GET",
@@ -56,13 +52,6 @@ $(window).load(function(){
     window.BBBLog = BBBLog;
 })(this);
 
-
-		console.log( "error" );
-	})
-	.always(function() {
-		console.log( "complete" );
-	});
-});
 function initLTActions(data){
 	var myRole = data.role;
 	if(myRole == 'MODERATOR'){
@@ -95,13 +84,11 @@ function setHostLinks(){
 		jsonpCallback: "showHeader"		
 	});
 }
-function enMeeting(){
-export function enMeeting(){
+function endMeeting(){
 	if(confirm('This action will end this live-session & exit all the participants from it. Do you really want to proceed?')){
 		window.location.href = window.endMeetingUrl;
 	}
 	else{
 		return false;
 	}
-}	
 }	

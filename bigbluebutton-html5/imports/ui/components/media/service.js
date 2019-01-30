@@ -1,11 +1,15 @@
-import SessionStorage from '/imports/ui/services/storage/session';
 import Presentations from '/imports/api/presentations';
 import { isVideoBroadcasting } from '/imports/ui/components/screenshare/service';
+import { getVideoId } from '/imports/ui/components/external-video-player/service';
 import Auth from '/imports/ui/services/auth';
 import Users from '/imports/api/users';
 import Settings from '/imports/ui/services/settings';
 import VideoService from '/imports/ui/components/video-provider/service';
 import PollingService from '/imports/ui/components/polling/service';
+import getFromUserSettings from '/imports/ui/services/users-settings';
+
+const LAYOUT_CONFIG = Meteor.settings.public.layout;
+const KURENTO_CONFIG = Meteor.settings.public.kurento;
 
 const getPresentationInfo = () => {
   const currentPresentation = Presentations.findOne({
@@ -24,11 +28,15 @@ function shouldShowWhiteboard() {
 }
 
 function shouldShowScreenshare() {
-  return isVideoBroadcasting() && Meteor.settings.public.kurento.enableScreensharing;
+  return isVideoBroadcasting() && getFromUserSettings('enableScreensharing', KURENTO_CONFIG.enableScreensharing);
+}
+
+function shouldShowExternalVideo() {
+  return getVideoId() && Meteor.settings.public.app.enableExternalVideo;
 }
 
 function shouldShowOverlay() {
-  return Meteor.settings.public.kurento.enableVideo;
+  return getFromUserSettings('enableVideo', KURENTO_CONFIG.enableVideo);
 }
 
 const swapLayout = {
@@ -53,17 +61,19 @@ export const shouldEnableSwapLayout = () => {
 
 export const getSwapLayout = () => {
   swapLayout.tracker.depend();
-  const metaAutoSwapLayout = SessionStorage.getItem('metadata').html5autoswaplayout || false;
-  return metaAutoSwapLayout || (swapLayout.value && shouldEnableSwapLayout());
+  const autoSwapLayout = getFromUserSettings('autoSwapLayout', LAYOUT_CONFIG.autoSwapLayout);
+  return autoSwapLayout || (swapLayout.value && shouldEnableSwapLayout());
 };
 
 export default {
   getPresentationInfo,
   shouldShowWhiteboard,
   shouldShowScreenshare,
+  shouldShowExternalVideo,
   shouldShowOverlay,
   isUserPresenter,
   isVideoBroadcasting,
   toggleSwapLayout,
   shouldEnableSwapLayout,
+  getSwapLayout,
 };

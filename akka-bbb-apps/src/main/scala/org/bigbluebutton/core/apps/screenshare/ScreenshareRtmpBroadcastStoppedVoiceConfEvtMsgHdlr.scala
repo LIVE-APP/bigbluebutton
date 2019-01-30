@@ -2,14 +2,13 @@ package org.bigbluebutton.core.apps.screenshare
 
 import org.bigbluebutton.common2.msgs._
 import org.bigbluebutton.core.apps.ScreenshareModel
-import org.bigbluebutton.core.running.OutMsgRouter
+import org.bigbluebutton.core.bus.MessageBus
+import org.bigbluebutton.core.running.LiveMeeting
 
 trait ScreenshareRtmpBroadcastStoppedVoiceConfEvtMsgHdlr {
   this: ScreenshareApp2x =>
 
-  val outGW: OutMsgRouter
-
-  def handleScreenshareRtmpBroadcastStoppedVoiceConfEvtMsg(msg: ScreenshareRtmpBroadcastStoppedVoiceConfEvtMsg): Unit = {
+  def handle(msg: ScreenshareRtmpBroadcastStoppedVoiceConfEvtMsg, liveMeeting: LiveMeeting, bus: MessageBus): Unit = {
 
     def broadcastEvent(voiceConf: String, screenshareConf: String,
                        stream: String, vidWidth: Int, vidHeight: Int,
@@ -17,13 +16,11 @@ trait ScreenshareRtmpBroadcastStoppedVoiceConfEvtMsgHdlr {
 
       val routing = Routing.addMsgToClientRouting(
         MessageTypes.BROADCAST_TO_MEETING,
-        liveMeeting.props.meetingProp.intId, "not-used"
-      )
+        liveMeeting.props.meetingProp.intId, "not-used")
       val envelope = BbbCoreEnvelope(ScreenshareRtmpBroadcastStoppedEvtMsg.NAME, routing)
       val header = BbbClientMsgHeader(
         ScreenshareRtmpBroadcastStoppedEvtMsg.NAME,
-        liveMeeting.props.meetingProp.intId, "not-used"
-      )
+        liveMeeting.props.meetingProp.intId, "not-used")
 
       val body = ScreenshareRtmpBroadcastStoppedEvtMsgBody(voiceConf, screenshareConf,
         stream, vidWidth, vidHeight, timestamp)
@@ -43,7 +40,7 @@ trait ScreenshareRtmpBroadcastStoppedVoiceConfEvtMsgHdlr {
       // notify viewers that RTMP broadcast stopped
       val msgEvent = broadcastEvent(msg.body.voiceConf, msg.body.screenshareConf, msg.body.stream,
         msg.body.vidWidth, msg.body.vidHeight, msg.body.timestamp)
-      outGW.send(msgEvent)
+      bus.outGW.send(msgEvent)
     } else {
       log.info("STOP broadcast NOT ALLOWED when isBroadcastingRTMP=false")
     }

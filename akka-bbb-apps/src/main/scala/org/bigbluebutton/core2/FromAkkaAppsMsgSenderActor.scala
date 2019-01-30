@@ -4,7 +4,7 @@ import akka.actor.{ Actor, ActorLogging, Props }
 import org.bigbluebutton.SystemConfiguration
 import org.bigbluebutton.common2.msgs._
 import org.bigbluebutton.common2.util.JsonUtil
-import org.bigbluebutton.core.MessageSender
+import org.bigbluebutton.common2.redis.MessageSender
 
 object FromAkkaAppsMsgSenderActor {
   def props(msgSender: MessageSender): Props = Props(classOf[FromAkkaAppsMsgSenderActor], msgSender)
@@ -22,10 +22,12 @@ class FromAkkaAppsMsgSenderActor(msgSender: MessageSender)
     val json = JsonUtil.toJson(msg)
 
     msg.envelope.name match {
-      case SyncGetPresentationInfoRespMsg.NAME => msgSender.send(toHTML5RedisChannel, json)
+      case SyncGetPresentationPodsRespMsg.NAME => msgSender.send(toHTML5RedisChannel, json)
       case SyncGetMeetingInfoRespMsg.NAME      => msgSender.send(toHTML5RedisChannel, json)
       case SyncGetUsersMeetingRespMsg.NAME     => msgSender.send(toHTML5RedisChannel, json)
-      case SyncGetWhiteboardAccessRespMsg.NAME => msgSender.send(toHTML5RedisChannel, json)
+      case SyncGetGroupChatsRespMsg.NAME       => msgSender.send(toHTML5RedisChannel, json)
+      case SyncGetGroupChatMsgsRespMsg.NAME    => msgSender.send(toHTML5RedisChannel, json)
+      case SyncGetVoiceUsersRespMsg.NAME       => msgSender.send(toHTML5RedisChannel, json)
 
       // Sent to FreeSWITCH
       case ScreenshareStartRtmpBroadcastVoiceConfMsg.NAME =>
@@ -95,7 +97,7 @@ class FromAkkaAppsMsgSenderActor(msgSender: MessageSender)
       //==================================================================
 
       //==================================================================
-      // Some events are only intended for recording and shouldn't be 
+      // Some events are only intended for recording and shouldn't be
       // sent past akka-apps
       // Poll Record Event
       case UserRespondedToPollRecordMsg.NAME =>

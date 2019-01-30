@@ -23,16 +23,14 @@ object BigBlueButtonActor extends SystemConfiguration {
     system:    ActorSystem,
     eventBus:  InternalEventBus,
     bbbMsgBus: BbbMsgRouterEventBus,
-    outGW:     OutMessageGateway
-  ): Props =
+    outGW:     OutMessageGateway): Props =
     Props(classOf[BigBlueButtonActor], system, eventBus, bbbMsgBus, outGW)
 }
 
 class BigBlueButtonActor(
   val system:   ActorSystem,
   val eventBus: InternalEventBus, val bbbMsgBus: BbbMsgRouterEventBus,
-  val outGW: OutMessageGateway
-) extends Actor
+  val outGW: OutMessageGateway) extends Actor
     with ActorLogging with SystemConfiguration {
 
   implicit def executionContext = system.dispatcher
@@ -69,8 +67,10 @@ class BigBlueButtonActor(
 
   private def handleBbbCommonEnvCoreMsg(msg: BbbCommonEnvCoreMsg): Unit = {
     msg.core match {
+
       case m: CreateMeetingReqMsg         => handleCreateMeetingReqMsg(m)
       case m: RegisterUserReqMsg          => handleRegisterUserReqMsg(m)
+      case m: EjectDuplicateUserReqMsg    => handleEjectDuplicateUserReqMsg(m)
       case m: GetAllMeetingsReqMsg        => handleGetAllMeetingsReqMsg(m)
       case m: CheckAlivePingSysMsg        => handleCheckAlivePingSysMsg(m)
       case m: ValidateConnAuthTokenSysMsg => handleValidateConnAuthTokenSysMsg(m)
@@ -100,8 +100,18 @@ class BigBlueButtonActor(
     }
   }
 
+  def handleEjectDuplicateUserReqMsg(msg: EjectDuplicateUserReqMsg): Unit = {
+    log.debug("RECEIVED EjectDuplicateUserReqMsg msg {}", msg)
+    for {
+      m <- RunningMeetings.findWithId(meetings, msg.header.meetingId)
+    } yield {
+      log.debug("FORWARDING EjectDuplicateUserReqMsg")
+      m.actorRef forward (msg)
+    }
+  }
+
   def handleCreateMeetingReqMsg(msg: CreateMeetingReqMsg): Unit = {
-    log.debug("****** RECEIVED CreateMeetingReqMsg msg {}", msg)
+    log.debug("RECEIVED CreateMeetingReqMsg msg {}", msg)
 
     RunningMeetings.findWithId(meetings, msg.body.props.meetingProp.intId) match {
       case None =>

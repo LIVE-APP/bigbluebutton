@@ -2,7 +2,7 @@ package org.bigbluebutton.core.apps.users
 
 import org.bigbluebutton.common2.domain.DefaultProps
 import org.bigbluebutton.common2.msgs._
-import org.bigbluebutton.core.domain.{ MeetingInactivityTracker, MeetingState2x }
+import org.bigbluebutton.core.domain.MeetingState2x
 import org.bigbluebutton.core.running.{ LiveMeeting, OutMsgRouter }
 
 trait MeetingActivityResponseCmdMsgHdlr {
@@ -13,8 +13,7 @@ trait MeetingActivityResponseCmdMsgHdlr {
 
   def handleMeetingActivityResponseCmdMsg(
     msg:   MeetingActivityResponseCmdMsg,
-    state: MeetingState2x
-  ): MeetingState2x = {
+    state: MeetingState2x): MeetingState2x = {
     processMeetingActivityResponse(liveMeeting.props, outGW, msg)
     val tracker = state.inactivityTracker.resetWarningSentAndTimestamp()
     state.update(tracker)
@@ -23,8 +22,7 @@ trait MeetingActivityResponseCmdMsgHdlr {
   def processMeetingActivityResponse(
     props: DefaultProps,
     outGW: OutMsgRouter,
-    msg:   MeetingActivityResponseCmdMsg
-  ): Unit = {
+    msg:   MeetingActivityResponseCmdMsg): Unit = {
 
     def buildMeetingIsActiveEvtMsg(meetingId: String): BbbCommonEnvCoreMsg = {
       val routing = Routing.addMsgToClientRouting(MessageTypes.BROADCAST_TO_MEETING, meetingId, "not-used")

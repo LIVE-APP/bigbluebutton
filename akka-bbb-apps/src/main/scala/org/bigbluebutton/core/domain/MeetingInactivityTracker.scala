@@ -1,12 +1,11 @@
 package org.bigbluebutton.core.domain
 
 case class MeetingInactivityTracker(
-    val maxInactivityTimeoutInMs: Long,
-    val warningBeforeMaxInMs:     Long,
-    lastActivityTimestampInMs:    Long,
-    warningSent:                  Boolean,
-    warningSentOnTimestampInMs:   Long
-) {
+  val maxInactivityTimeoutInMs: Long,
+  val warningBeforeMaxInMs:     Long,
+  lastActivityTimestampInMs:    Long,
+  warningSent:                  Boolean,
+  warningSentOnTimestampInMs:   Long) {
   def setWarningSentAndTimestamp(nowInMs: Long): MeetingInactivityTracker = {
     copy(warningSent = true, warningSentOnTimestampInMs = nowInMs)
   }
@@ -20,7 +19,9 @@ case class MeetingInactivityTracker(
   }
 
   def hasRecentActivity(nowInMs: Long): Boolean = {
-    nowInMs - lastActivityTimestampInMs < maxInactivityTimeoutInMs - warningBeforeMaxInMs
+    val left = nowInMs - lastActivityTimestampInMs
+    val right = maxInactivityTimeoutInMs - warningBeforeMaxInMs
+    left < right
   }
 
   def isMeetingInactive(nowInMs: Long): Boolean = {
@@ -33,14 +34,16 @@ case class MeetingInactivityTracker(
 }
 
 case class MeetingExpiryTracker(
-    startedOnInMs:                     Long,
-    userHasJoined:                     Boolean,
-    isBreakout:                        Boolean,
-    lastUserLeftOnInMs:                Option[Long],
-    durationInMs:                      Long,
-    meetingExpireIfNoUserJoinedInMs:   Long,
-    meetingExpireWhenLastUserLeftInMs: Long
-) {
+  startedOnInMs:                     Long,
+  userHasJoined:                     Boolean,
+  isBreakout:                        Boolean,
+  lastUserLeftOnInMs:                Option[Long],
+  durationInMs:                      Long,
+  meetingExpireIfNoUserJoinedInMs:   Long,
+  meetingExpireWhenLastUserLeftInMs: Long,
+  userInactivityInspectTimerInMs:    Long,
+  userInactivityThresholdInMs:       Long,
+  userActivitySignResponseDelayInMs: Long) {
   def setUserHasJoined(): MeetingExpiryTracker = {
     if (!userHasJoined) {
       copy(userHasJoined = true, lastUserLeftOnInMs = None)
@@ -57,7 +60,10 @@ case class MeetingExpiryTracker(
     val expire = for {
       lastUserLeftOn <- lastUserLeftOnInMs
     } yield {
-      timestampInMs - lastUserLeftOn > meetingExpireWhenLastUserLeftInMs
+      // Check if we need to end meeting right away when the last user left
+      // ralam Nov 16, 2018
+      if (meetingExpireWhenLastUserLeftInMs == 0) true
+      else timestampInMs - lastUserLeftOn > meetingExpireWhenLastUserLeftInMs
     }
 
     expire.getOrElse(false)
@@ -93,10 +99,9 @@ case class MeetingExpiryTracker(
 }
 
 case class MeetingRecordingTracker(
-    startedOnInMs:        Long,
-    previousDurationInMs: Long,
-    currentDurationInMs:  Long
-) {
+  startedOnInMs:        Long,
+  previousDurationInMs: Long,
+  currentDurationInMs:  Long) {
 
   def startTimer(nowInMs: Long): MeetingRecordingTracker = {
     copy(startedOnInMs = nowInMs)

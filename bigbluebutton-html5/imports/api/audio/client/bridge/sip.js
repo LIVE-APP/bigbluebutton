@@ -15,6 +15,13 @@ const CALL_HANGUP_MAX_RETRIES = MEDIA.callHangupMaximumRetries;
 const CONNECTION_TERMINATED_EVENTS = ['iceConnectionFailed', 'iceConnectionClosed'];
 const CALL_CONNECT_NOTIFICATION_TIMEOUT = 1000;
 
+const logConnector = (level, category, label, content) => {
+  if (level === 'log')
+    level = "info";
+
+  logger[level]({logCode: 'sipjs_log'}, '[' + category + '] ' + content);
+};
+
 export default class SIPBridge extends BaseAudioBridge {
   constructor(userData) {
     super(userData);
@@ -200,6 +207,7 @@ export default class SIPBridge extends BaseAudioBridge {
         wsServers: `${(protocol === 'https:' ? 'wss://' : 'ws://')}${hostname}/ws`,
         log: {
           builtinEnabled: false,
+          connector: logConnector
         },
         displayName: callerIdName,
         register: false,
@@ -260,10 +268,8 @@ export default class SIPBridge extends BaseAudioBridge {
         },
       },
       RTCConstraints: {
-        mandatory: {
-          OfferToReceiveAudio: true,
-          OfferToReceiveVideo: false,
-        },
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: false,
       },
     };
 
@@ -274,7 +280,14 @@ export default class SIPBridge extends BaseAudioBridge {
     return new Promise((resolve) => {
       const { mediaHandler } = currentSession;
 
-      const connectionCompletedEvents = ['iceConnectionCompleted', 'iceConnectionConnected'];
+      let connectionCompletedEvents = ['iceConnectionCompleted', 'iceConnectionConnected'];
+      // Edge sends a connected first and then a completed, but the call isn't ready until
+      // the completed comes in. Due to the way that we have the listeners set up, the only
+      // way to ignore one status is to not listen for it.
+      if (browser().name === 'edge') {
+        connectionCompletedEvents  = ['iceConnectionCompleted'];
+      }
+
       const handleConnectionCompleted = () => {
         connectionCompletedEvents.forEach(e => mediaHandler.off(e, handleConnectionCompleted));
         // We have to delay notifying that the call is connected because it is sometimes not
@@ -297,9 +310,9 @@ export default class SIPBridge extends BaseAudioBridge {
           });
         }
 
-        const mappedCause = cause in this.errorCodes ?
-          this.errorCodes[cause] :
-          this.baseErrorCodes.GENERIC_ERROR;
+        const mappedCause = cause in this.errorCodes
+          ? this.errorCodes[cause]
+          : this.baseErrorCodes.GENERIC_ERROR;
 
         return this.callback({
           status: this.baseCallStates.failed,

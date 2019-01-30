@@ -8,6 +8,8 @@ import SIPBridge from '/imports/api/audio/client/bridge/sip';
 import logger from '/imports/startup/client/logger';
 import { notify } from '/imports/ui/services/notification';
 import browser from 'browser-detect';
+import iosWebviewAudioPolyfills from '../../../utils/ios-webview-audio-polyfills';
+import { tryGenerateIceCandidates } from '../../../utils/safari-webrtc';
 
 const MEDIA = Meteor.settings.public.media;
 const MEDIA_TAG = MEDIA.mediaTag;
@@ -53,6 +55,7 @@ class AudioManager {
     this.userData = userData;
     this.initialized = true;
   }
+
   setAudioMessages(messages) {
     this.messages = messages;
   }
@@ -136,7 +139,7 @@ class AudioManager {
     this.isEchoTest = false;
     const { name } = browser();
     // The kurento bridge isn't a full audio bridge yet, so we have to differ it
-    const bridge  = this.useKurento? this.listenOnlyBridge : this.bridge;
+    const bridge = this.useKurento ? this.listenOnlyBridge : this.bridge;
 
     const callOptions = {
       isListenOnly: true,
@@ -146,8 +149,19 @@ class AudioManager {
 
     // Webkit ICE restrictions demand a capture device permission to release
     // host candidates
-    if (name == 'safari') {
-      await this.askDevicesPermissions();
+    if (name === 'safari') {
+      try {
+        await tryGenerateIceCandidates();
+      } catch (e) {
+        this.notify(this.messages.error.ICE_NEGOTIATION_FAILED);
+      }
+    }
+
+    // Call polyfills for webrtc client if navigator is "iOS Webview"
+    const userAgent = window.navigator.userAgent.toLocaleLowerCase();
+    if ((userAgent.indexOf('iphone') > -1 || userAgent.indexOf('ipad') > -1)
+       && userAgent.indexOf('safari') == -1) {
+      iosWebviewAudioPolyfills();
     }
 
     // We need this until we upgrade to SIP 9x. See #4690
@@ -162,12 +176,11 @@ class AudioManager {
       }
 
       logger.error('Listen only error:', err, 'on try', retries);
-      const error = {
+      throw {
         type: 'MEDIA_ERROR',
         message: this.messages.error.MEDIA_ERROR,
-      }
-      throw error;
-    }
+      };
+    };
 
     return this.onAudioJoining()
       .then(() => Promise.race([
@@ -181,14 +194,14 @@ class AudioManager {
             // Exit previous SFU session and clean audio tag state
             window.kurentoExitAudio();
             this.useKurento = false;
-            let audio = document.querySelector(MEDIA_TAG);
+            const audio = document.querySelector(MEDIA_TAG);
             audio.muted = false;
           }
 
           try {
             await this.joinListenOnly(++retries);
-          } catch (err) {
-            return handleListenOnlyError(err);
+          } catch (error) {
+            return handleListenOnlyError(error);
           }
         } else {
           handleListenOnlyError(err);
@@ -207,7 +220,7 @@ class AudioManager {
   exitAudio() {
     if (!this.isConnected) return Promise.resolve();
 
-    const bridge  = (this.useKurento && this.isListenOnly) ? this.listenOnlyBridge : this.bridge;
+    const bridge = (this.useKurento && this.isListenOnly) ? this.listenOnlyBridge : this.bridge;
 
     this.isHangingUp = true;
     this.isEchoTest = false;
@@ -235,6 +248,8 @@ class AudioManager {
         changed: (id, fields) => {
           if (fields.muted !== undefined && fields.muted !== this.isMuted) {
             this.isMuted = fields.muted;
+            const muteState = this.isMuted ? 'selfMuted' : 'selfUnmuted';
+            window.parent.postMessage({ response: muteState }, '*');
           }
 
           if (fields.talking !== undefined && fields.talking !== this.isTalking) {
@@ -249,6 +264,7 @@ class AudioManager {
     }
 
     if (!this.isEchoTest) {
+      window.parent.postMessage({ response: 'joinedAudio' }, '*');
       this.notify(this.messages.info.JOINED_AUDIO);
     }
   }
@@ -273,6 +289,7 @@ class AudioManager {
     if (!this.error && !this.isEchoTest) {
       this.notify(this.messages.info.LEFT_AUDIO);
     }
+    window.parent.postMessage({ response: 'notInAudio' }, '*');
   }
 
   callStateCallback(response) {
@@ -309,21 +326,18 @@ class AudioManager {
       this.listenOnlyAudioContext.close();
     }
 
-    this.listenOnlyAudioContext = window.AudioContext ?
-      new window.AudioContext() :
-      new window.webkitAudioContext();
+    this.listenOnlyAudioContext = window.AudioContext
+      ? new window.AudioContext()
+      : new window.webkitAudioContext();
 
-    // Create a placeholder buffer to upstart audio context
-    const pBuffer = this.listenOnlyAudioContext.createBuffer(2, this.listenOnlyAudioContext.sampleRate * 3, this.listenOnlyAudioContext.sampleRate);
+    const dest = this.listenOnlyAudioContext.createMediaStreamDestination();
 
-    var dest = this.listenOnlyAudioContext.createMediaStreamDestination();
-
-    let audio = document.querySelector(MEDIA_TAG);
+    const audio = document.querySelector(MEDIA_TAG);
 
     // Play bogus silent audio to try to circumvent autoplay policy on Safari
-    audio.src = 'resources/sounds/silence.mp3'
+    audio.src = 'resources/sounds/silence.mp3';
 
-    audio.play().catch(e => {
+    audio.play().catch((e) => {
       logger.warn('Error on playing test audio:', e);
     });
 
@@ -331,8 +345,8 @@ class AudioManager {
   }
 
   isUsingAudio() {
-    return this.isConnected || this.isConnecting ||
-      this.isHangingUp || this.isEchoTest;
+    return this.isConnected || this.isConnecting
+      || this.isHangingUp || this.isEchoTest;
   }
 
   setDefaultInputDevice() {
@@ -349,11 +363,10 @@ class AudioManager {
       return Promise.resolve(inputDevice);
     };
 
-    const handleChangeInputDeviceError = () =>
-      Promise.reject({
-        type: 'MEDIA_ERROR',
-        message: this.messages.error.MEDIA_ERROR,
-      });
+    const handleChangeInputDeviceError = () => Promise.reject({
+      type: 'MEDIA_ERROR',
+      message: this.messages.error.MEDIA_ERROR,
+    });
 
     if (!deviceId) {
       return this.bridge.setDefaultInputDevice()

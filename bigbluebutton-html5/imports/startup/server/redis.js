@@ -28,7 +28,7 @@ const makeEnvelope = (channel, eventName, header, body) => {
 
 const makeDebugger = enabled => (message) => {
   if (!enabled) return;
-  Logger.info(`REDIS: ${message}`);
+  Logger.debug(`REDIS: ${message}`);
 };
 
 class MettingMessageQueue {
@@ -159,6 +159,9 @@ class RedisPubSub {
 
     if (ignoredMessages.includes(channel)
       || ignoredMessages.includes(eventName)) {
+      if (eventName === 'CheckAlivePongSysMsg') {
+        return;
+      }
       this.debug(`${eventName} skipped`);
       return;
     }

@@ -1,9 +1,9 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import browser from 'browser-detect';
 import SettingsDropdown from './component';
 import { toggleFullScreen } from './service';
 
-export default class SettingsDropdownContainer extends Component {
+export default class SettingsDropdownContainer extends PureComponent {
   constructor(props) {
     super(props);
 
@@ -22,8 +22,9 @@ export default class SettingsDropdownContainer extends Component {
       'MSFullscreenChange',
     ];
 
-    fullscreenChangedEvents.forEach(event =>
-      document.addEventListener(event, this.handleFullscreenChange));
+    fullscreenChangedEvents.forEach((event) => {
+      document.addEventListener(event, this.handleFullscreenChange);
+    });
   }
 
   componentWillUnmount() {
@@ -34,8 +35,9 @@ export default class SettingsDropdownContainer extends Component {
       'MSFullscreenChange',
     ];
 
-    fullscreenChangedEvents.forEach(event =>
-      document.removeEventListener(event, this.fullScreenToggleCallback));
+    fullscreenChangedEvents.forEach((event) => {
+      document.removeEventListener(event, this.fullScreenToggleCallback);
+    });
   }
 
   handleFullscreenChange() {
@@ -50,8 +52,10 @@ export default class SettingsDropdownContainer extends Component {
   }
 
   render() {
+    const { amIModerator } = this.props;
+
     const handleToggleFullscreen = toggleFullScreen;
-    const isFullScreen = this.state.isFullScreen;
+    const { isFullScreen } = this.state;
     const result = browser();
     const isAndroid = (result && result.os) ? result.os.includes('Android') : false;
 
@@ -60,6 +64,7 @@ export default class SettingsDropdownContainer extends Component {
         handleToggleFullscreen={handleToggleFullscreen}
         isFullScreen={isFullScreen}
         isAndroid={isAndroid}
+        amIModerator={amIModerator}
       />
     );
   }

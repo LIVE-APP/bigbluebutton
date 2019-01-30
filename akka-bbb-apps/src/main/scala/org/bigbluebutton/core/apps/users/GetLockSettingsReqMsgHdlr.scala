@@ -1,9 +1,9 @@
 package org.bigbluebutton.core.apps.users
 
 import org.bigbluebutton.common2.msgs._
-import org.bigbluebutton.core.api.Permissions
 import org.bigbluebutton.core.running.{ MeetingActor, OutMsgRouter }
 import org.bigbluebutton.core2.MeetingStatus2x
+import org.bigbluebutton.core2.Permissions
 
 trait GetLockSettingsReqMsgHdlr {
   this: MeetingActor =>
@@ -19,8 +19,7 @@ trait GetLockSettingsReqMsgHdlr {
         disableCam = settings.disableCam,
         disableMic = settings.disableMic, disablePrivChat = settings.disablePrivChat,
         disablePubChat = settings.disablePubChat, lockedLayout = settings.lockedLayout,
-        lockOnJoin = settings.lockOnJoin, lockOnJoinConfigurable = settings.lockOnJoinConfigurable
-      )
+        lockOnJoin = settings.lockOnJoin, lockOnJoinConfigurable = settings.lockOnJoinConfigurable)
       val header = BbbClientMsgHeader(GetLockSettingsRespMsg.NAME, meetingId, requestedBy)
       val event = GetLockSettingsRespMsg(header, body)
 

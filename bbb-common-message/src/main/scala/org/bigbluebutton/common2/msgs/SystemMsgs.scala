@@ -70,6 +70,12 @@ case class MeetingDestroyedEvtMsg(header: BbbCoreBaseHeader,
                                 body: MeetingDestroyedEvtMsgBody) extends BbbCoreMsg
 case class MeetingDestroyedEvtMsgBody(meetingId: String)
 
+/**
+  * System server side message to eject user from meeting.
+  */
+object EjectUserFromMeetingSysMsg { val NAME = "EjectUserFromMeetingSysMsg" }
+case class EjectUserFromMeetingSysMsg(header: BbbClientMsgHeader, body: EjectUserFromMeetingSysMsgBody) extends StandardMsg
+case class EjectUserFromMeetingSysMsgBody(userId: String, ejectedBy: String)
 
 object DisconnectAllClientsSysMsg { val NAME = "DisconnectAllClientsSysMsg"}
 case class DisconnectAllClientsSysMsg(header: BbbCoreHeaderWithMeetingId,
@@ -79,13 +85,17 @@ case class DisconnectAllClientsSysMsgBody(meetingId: String, reason: String)
 object DisconnectClientSysMsg { val NAME = "DisconnectClientSysMsg"}
 case class DisconnectClientSysMsg(header: BbbCoreHeaderWithMeetingId,
                                   body: DisconnectClientSysMsgBody) extends BbbCoreMsg
-case class DisconnectClientSysMsgBody(meetingId: String, userId: String, reason: String)
+case class DisconnectClientSysMsgBody(meetingId: String, userId: String, ejectedBy: String, reason: String)
 
 object EndAndKickAllSysMsg { val NAME = "EndAndKickAllSysMsg"}
 case class EndAndKickAllSysMsg(header: BbbCoreHeaderWithMeetingId,
                                       body: EndAndKickAllSysMsgBody) extends BbbCoreMsg
 case class EndAndKickAllSysMsgBody(meetingId: String)
 
+object RecordStatusResetSysMsg {val NAME = "RecordStatusResetSysMsg"}
+case class RecordStatusResetSysMsg(header: BbbCoreHeaderWithMeetingId,
+                                      body: RecordStatusResetSysMsgBody) extends BbbCoreMsg
+case class RecordStatusResetSysMsgBody(recording: Boolean, setBy: String)
 
 object SyncGetMeetingInfoRespMsg { val NAME = "SyncGetMeetingInfoRespMsg"}
   case class SyncGetMeetingInfoRespMsg(header: BbbCoreBaseHeader,
@@ -124,6 +134,12 @@ case class CheckAlivePongSysMsg(header: BbbCoreBaseHeader,
                                 body: CheckAlivePongSysMsgBody) extends BbbCoreMsg
 case class CheckAlivePongSysMsgBody(system: String, timestamp: Long)
 
+
+object RecordingChapterBreakSysMsg { val NAME = "RecordingChapterBreakSysMsg" }
+case class RecordingChapterBreakSysMsg(header: BbbCoreHeaderWithMeetingId,
+                                body: RecordingChapterBreakSysMsgBody) extends BbbCoreMsg
+case class RecordingChapterBreakSysMsgBody(meetingId: String, timestamp: Long)
+
 object ValidateConnAuthTokenSysMsg { val NAME = "ValidateConnAuthTokenSysMsg" }
 case class ValidateConnAuthTokenSysMsg(header: BbbCoreBaseHeader,
                                        body: ValidateConnAuthTokenSysMsgBody) extends BbbCoreMsg
@@ -135,3 +151,15 @@ case class ValidateConnAuthTokenSysRespMsg(header: BbbCoreHeaderWithMeetingId,
                                            body: ValidateConnAuthTokenSysRespMsgBody) extends BbbCoreMsg
 case class ValidateConnAuthTokenSysRespMsgBody(meetingId: String, userId: String,
                                                connId: String, authzed: Boolean, app: String)
+
+object PublishedRecordingSysMsg { val NAME = "PublishedRecordingSysMsg" }
+case class PublishedRecordingSysMsg(header: BbbCoreBaseHeader, body: PublishedRecordingSysMsgBody) extends BbbCoreMsg
+case class PublishedRecordingSysMsgBody(recordId: String)
+
+object UnpublishedRecordingSysMsg { val NAME = "UnpublishedRecordingSysMsg" }
+case class UnpublishedRecordingSysMsg(header: BbbCoreBaseHeader, body: UnpublishedRecordingSysMsgBody) extends BbbCoreMsg
+case class UnpublishedRecordingSysMsgBody(recordId: String)
+
+object DeletedRecordingSysMsg { val NAME = "DeletedRecordingSysMsg" }
+case class DeletedRecordingSysMsg(header: BbbCoreBaseHeader, body: DeletedRecordingSysMsgBody) extends BbbCoreMsg
+case class DeletedRecordingSysMsgBody(recordId: String)

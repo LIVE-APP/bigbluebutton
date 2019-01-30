@@ -17,6 +17,7 @@ package org.red5.flash.bwcheck.app
 	
 	public class BandwidthDetectionApp extends Application
 	{
+
 		private var _serverURL:String = "localhost";
 		private var _serverApplication:String = "";
 		private var _clientServerService:String = "";
@@ -73,7 +74,7 @@ package org.red5.flash.bwcheck.app
 				}
 				
 				bwMonUrl = tunnelProtocol + "://" + hostName + "/" + bwMonOption.application;
-				trace("******* BW MON CONNECT tunnel = TRUE " + "url=" +  bwMonUrl);
+				LogUtil.debug("******* BW MON CONNECT tunnel = TRUE " + "url=" +  bwMonUrl);
 			} else {
 				var nativeProtocol: String = ConnUtil.RTMP;
 				if (useRTMPS) {
@@ -82,7 +83,7 @@ package org.red5.flash.bwcheck.app
 				}
 				
 				bwMonUrl = nativeProtocol + "://" + hostName + "/" + bwMonOption.application;
-				trace("******* BBB MON CONNECT tunnel = FALSE " + "url=" +  bwMonUrl);
+				LogUtil.debug("******* BBB MON CONNECT tunnel = FALSE " + "url=" +  bwMonUrl);
 			}
 
 			nc.objectEncoding = flash.net.ObjectEncoding.AMF3;

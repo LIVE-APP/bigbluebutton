@@ -207,7 +207,7 @@ public class SvgImageCreatorImp implements SvgImageCreator {
 
         Gson gson = new Gson();
         String logStr = gson.toJson(logData);
-        log.warn("-- analytics -- " + logStr);
+        log.warn("-- analytics -- {}", logStr);
 
         return false;
     }

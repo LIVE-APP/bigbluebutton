@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import { defineMessages } from 'react-intl';
 import PropTypes from 'prop-types';
 import { findDOMNode } from 'react-dom';
@@ -11,9 +11,10 @@ import DropdownList from '/imports/ui/components/dropdown/list/component';
 import DropdownListItem from '/imports/ui/components/dropdown/list/item/component';
 import DropdownListSeparator from '/imports/ui/components/dropdown/list/separator/component';
 import _ from 'lodash';
+import { Session } from 'meteor/session';
 import { styles } from './styles';
-import UserName from './../user-name/component';
-import UserIcons from './../user-icons/component';
+import UserName from '../user-name/component';
+import UserIcons from '../user-icons/component';
 
 const messages = defineMessages({
   presenter: {
@@ -80,6 +81,14 @@ const messages = defineMessages({
     id: 'app.userList.menu.demoteUser.label',
     description: 'Forcefully demote this moderator to a viewer',
   },
+  UnlockUserLabel: {
+    id: 'app.userList.menu.unlockUser.label',
+    description: 'Unlock individual user',
+  },
+  LockUserLabel: {
+    id: 'app.userList.menu.lockUser.label',
+    description: 'Lock a unlocked user',
+  },
 });
 
 const propTypes = {
@@ -89,12 +98,12 @@ const propTypes = {
     formatMessage: PropTypes.func.isRequired,
   }).isRequired,
   normalizeEmojiName: PropTypes.func.isRequired,
-  meeting: PropTypes.shape({}).isRequired,
   isMeetingLocked: PropTypes.func.isRequired,
   getScrollContainerRef: PropTypes.func.isRequired,
+  toggleUserLock: PropTypes.func.isRequired,
 };
 
-class UserDropdown extends Component {
+class UserDropdown extends PureComponent {
   /**
    * Return true if the content fit on the screen, false otherwise.
    *
@@ -131,37 +140,52 @@ class UserDropdown extends Component {
     this.seperator = _.uniqueId('action-separator-');
   }
 
-  componentDidUpdate(prevProps, prevState) {
-    if (!this.state.isActionsOpen && this.state.showNestedOptions) {
+  componentDidUpdate() {
+    const { isActionsOpen, showNestedOptions } = this.state;
+
+    if (!isActionsOpen && showNestedOptions) {
       return this.resetMenuState();
     }
 
-    this.checkDropdownDirection();
+    return this.checkDropdownDirection();
   }
 
-  makeDropdownItem(key, label, onClick, icon = null, iconRight = null) {
-    return (
-      <DropdownListItem
-        {...{
-          key,
-          label,
-          onClick,
-          icon,
-          iconRight,
-        }}
-        className={key === this.props.getEmoji ? styles.emojiSelected : null}
-      />
-    );
+  onActionsShow() {
+    const { getScrollContainerRef } = this.props;
+    const dropdown = this.getDropdownMenuParent();
+    const scrollContainer = getScrollContainerRef();
+
+    if (dropdown && scrollContainer) {
+      const dropdownTrigger = dropdown.children[0];
+      const list = findDOMNode(this.list);
+      const children = [].slice.call(list.children);
+      children.find(child => child.getAttribute('role') === 'menuitem').focus();
+
+      this.setState({
+        isActionsOpen: true,
+        dropdownVisible: false,
+        dropdownOffset: dropdownTrigger.offsetTop - scrollContainer.scrollTop,
+        dropdownDirection: 'top',
+      });
+
+      scrollContainer.addEventListener('scroll', this.handleScroll, false);
+    }
   }
 
-  resetMenuState() {
-    return this.setState({
+  onActionsHide(callback) {
+    const { getScrollContainerRef } = this.props;
+
+    this.setState({
       isActionsOpen: false,
-      dropdownOffset: 0,
-      dropdownDirection: 'top',
       dropdownVisible: false,
-      showNestedOptions: false,
     });
+
+    const scrollContainer = getScrollContainerRef();
+    scrollContainer.removeEventListener('scroll', this.handleScroll, false);
+
+    if (callback) {
+      return callback;
+    }
   }
 
   getUsersActions() {
@@ -169,9 +193,9 @@ class UserDropdown extends Component {
       intl,
       currentUser,
       user,
-      router,
       isBreakoutRoom,
       getAvailableActions,
+      getGroupChatPrivate,
       handleEmojiChange,
       getEmojiList,
       setEmojiStatus,
@@ -179,9 +203,14 @@ class UserDropdown extends Component {
       removeUser,
       toggleVoice,
       changeRole,
+      lockSettingsProp,
+      hasPrivateChatBetweenUsers,
+      toggleUserLock,
     } = this.props;
 
-    const actionPermissions = getAvailableActions(currentUser, user, router, isBreakoutRoom);
+    const { showNestedOptions } = this.state;
+
+    const actionPermissions = getAvailableActions(currentUser, user, isBreakoutRoom);
     const actions = [];
 
     const {
@@ -194,9 +223,17 @@ class UserDropdown extends Component {
       allowedToPromote,
       allowedToDemote,
       allowedToChangeStatus,
+      allowedToChangeUserLockStatus,
     } = actionPermissions;
 
-    if (this.state.showNestedOptions) {
+    const { disablePrivChat } = lockSettingsProp;
+
+    const enablePrivateChat = currentUser.isModerator
+      ? allowedToChatPrivately
+      : allowedToChatPrivately
+      && (!disablePrivChat || (disablePrivChat && hasPrivateChatBetweenUsers(currentUser, user)));
+
+    if (showNestedOptions) {
       if (allowedToChangeStatus) {
         actions.push(this.makeDropdownItem(
           'back',
@@ -229,11 +266,15 @@ class UserDropdown extends Component {
       ));
     }
 
-    if (allowedToChatPrivately) {
+    if (enablePrivateChat) {
       actions.push(this.makeDropdownItem(
-        'openChat',
+        'activeChat',
         intl.formatMessage(messages.ChatLabel),
-        () => this.onActionsHide(router.push(`/users/chat/${user.id}`)),
+        () => {
+          getGroupChatPrivate(currentUser, user);
+          Session.set('openPanel', 'chat');
+          Session.set('idChatOpen', user.id);
+        },
         'chat',
       ));
     }
@@ -301,47 +342,50 @@ class UserDropdown extends Component {
       ));
     }
 
+    if (allowedToChangeUserLockStatus) {
+      actions.push(this.makeDropdownItem(
+        'unlockUser',
+        user.isLocked ? intl.formatMessage(messages.UnlockUserLabel, { 0: user.name })
+          : intl.formatMessage(messages.LockUserLabel, { 0: user.name }),
+        () => this.onActionsHide(toggleUserLock(user.id, !user.isLocked)),
+        user.isLocked ? 'unlock' : 'lock',
+      ));
+    }
+
     return actions;
-  }
-
-  onActionsShow() {
-    const dropdown = this.getDropdownMenuParent();
-    const scrollContainer = this.props.getScrollContainerRef();
-
-    if (dropdown && scrollContainer) {
-      const dropdownTrigger = dropdown.children[0];
-      const list = findDOMNode(this.list);
-      const children = [].slice.call(list.children);
-      children.find(child => child.getAttribute('role') === 'menuitem').focus();
-
-      this.setState({
-        isActionsOpen: true,
-        dropdownVisible: false,
-        dropdownOffset: dropdownTrigger.offsetTop - scrollContainer.scrollTop,
-        dropdownDirection: 'top',
-      });
-
-      scrollContainer.addEventListener('scroll', this.handleScroll, false);
-    }
-  }
-
-  onActionsHide(callback) {
-    this.setState({
-      isActionsOpen: false,
-      dropdownVisible: false,
-    });
-
-    const scrollContainer = this.props.getScrollContainerRef();
-    scrollContainer.removeEventListener('scroll', this.handleScroll, false);
-
-    if (callback) {
-      return callback;
-    }
   }
 
   getDropdownMenuParent() {
     return findDOMNode(this.dropdown);
   }
+
+  makeDropdownItem(key, label, onClick, icon = null, iconRight = null) {
+    const { getEmoji } = this.props;
+    return (
+      <DropdownListItem
+        {...{
+          key,
+          label,
+          onClick,
+          icon,
+          iconRight,
+        }}
+        className={key === getEmoji ? styles.emojiSelected : null}
+        data-test={key}
+      />
+    );
+  }
+
+  resetMenuState() {
+    return this.setState({
+      isActionsOpen: false,
+      dropdownOffset: 0,
+      dropdownDirection: 'top',
+      dropdownVisible: false,
+      showNestedOptions: false,
+    });
+  }
+
 
   handleScroll() {
     this.setState({ isActionsOpen: false });
@@ -351,26 +395,25 @@ class UserDropdown extends Component {
    * Check if the dropdown is visible, if so, check if should be draw on top or bottom direction.
    */
   checkDropdownDirection() {
+    const { getScrollContainerRef } = this.props;
     if (this.isDropdownActivedByUser()) {
       const dropdown = this.getDropdownMenuParent();
       const dropdownTrigger = dropdown.children[0];
       const dropdownContent = dropdown.children[1];
 
-      const scrollContainer = this.props.getScrollContainerRef();
+      const scrollContainer = getScrollContainerRef();
 
       const nextState = {
         dropdownVisible: true,
       };
 
-      const isDropdownVisible =
-        UserDropdown.checkIfDropdownIsVisible(
-          dropdownContent.offsetTop,
-          dropdownContent.offsetHeight,
-        );
+      const isDropdownVisible = UserDropdown.checkIfDropdownIsVisible(
+        dropdownContent.offsetTop,
+        dropdownContent.offsetHeight,
+      );
 
       if (!isDropdownVisible) {
-        const offsetPageTop =
-          ((dropdownTrigger.offsetTop + dropdownTrigger.offsetHeight) - scrollContainer.scrollTop);
+        const offsetPageTop = (dropdownTrigger.offsetTop + dropdownTrigger.offsetHeight) - scrollContainer.scrollTop;
 
         nextState.dropdownOffset = window.innerHeight - offsetPageTop;
         nextState.dropdownDirection = 'bottom';
@@ -400,9 +443,9 @@ class UserDropdown extends Component {
     const { clientType } = user;
     const isVoiceOnly = clientType === 'dial-in-user';
 
-    const iconUser = user.emoji.status !== 'none' ?
-      (<Icon iconName={normalizeEmojiName(user.emoji.status)} />) :
-      user.name.toLowerCase().slice(0, 2);
+    const iconUser = user.emoji.status !== 'none'
+      ? (<Icon iconName={normalizeEmojiName(user.emoji.status)} />)
+      : user.name.toLowerCase().slice(0, 2);
 
     const iconVoiceOnlyUser = (<Icon iconName="speak_louder" />);
 
@@ -416,7 +459,7 @@ class UserDropdown extends Component {
         voice={user.isVoiceUser}
         color={user.color}
       >
-        {isVoiceOnly ? iconVoiceOnlyUser : iconUser }
+        {isVoiceOnly ? iconVoiceOnlyUser : iconUser}
       </UserAvatar>
     );
   }
@@ -427,7 +470,7 @@ class UserDropdown extends Component {
       user,
       intl,
       isMeetingLocked,
-      meeting,
+      meetingId,
     } = this.props;
 
     const {
@@ -435,16 +478,16 @@ class UserDropdown extends Component {
       dropdownVisible,
       dropdownDirection,
       dropdownOffset,
+      showNestedOptions,
     } = this.state;
 
     const actions = this.getUsersActions();
 
     const userItemContentsStyle = {};
 
-    userItemContentsStyle[styles.userItemContentsCompact] = compact;
     userItemContentsStyle[styles.dropdown] = true;
-    userItemContentsStyle[styles.userListItem] = !this.state.isActionsOpen;
-    userItemContentsStyle[styles.usertListItemWithMenu] = this.state.isActionsOpen;
+    userItemContentsStyle[styles.userListItem] = !isActionsOpen;
+    userItemContentsStyle[styles.usertListItemWithMenu] = isActionsOpen;
 
     const you = (user.isCurrent) ? intl.formatMessage(messages.you) : '';
 
@@ -464,18 +507,19 @@ class UserDropdown extends Component {
 
     const contents = (
       <div
+        data-test={user.isCurrent ? 'userListItemCurrent' : null}
         className={!actions.length ? styles.userListItem : null}
       >
         <div className={styles.userItemContents}>
           <div className={styles.userAvatar}>
-            { this.renderUserAvatar() }
+            {this.renderUserAvatar()}
           </div>
           {<UserName
             {...{
               user,
               compact,
               intl,
-              meeting,
+              meetingId,
               isMeetingLocked,
               userAriaLabel,
               isActionsOpen,
@@ -496,7 +540,7 @@ class UserDropdown extends Component {
     return (
       <Dropdown
         ref={(ref) => { this.dropdown = ref; }}
-        isOpen={this.state.isActionsOpen}
+        keepOpen={isActionsOpen || showNestedOptions}
         onShow={this.onActionsShow}
         onHide={this.onActionsHide}
         className={userItemContentsStyle}

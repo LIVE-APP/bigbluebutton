@@ -1,6 +1,7 @@
 package org.bigbluebutton.api2.bus
 
 import org.bigbluebutton.api2.SystemConfiguration
+import org.bigbluebutton.common2.bus._
 import org.bigbluebutton.common2.msgs._
 import com.fasterxml.jackson.databind.JsonNode
 import akka.actor.Actor
@@ -87,6 +88,16 @@ class ReceivedJsonMsgHdlrActor(val msgFromAkkaAppsEventBus: MsgFromAkkaAppsEvent
         route[UserRoleChangedEvtMsg](envelope, jsonNode)
       case CreateBreakoutRoomSysCmdMsg.NAME =>
         route[CreateBreakoutRoomSysCmdMsg](envelope, jsonNode)
+      case PresentationUploadTokenSysPubMsg.NAME =>
+        route[PresentationUploadTokenSysPubMsg](envelope, jsonNode)
+      case GuestsWaitingApprovedEvtMsg.NAME =>
+        route[GuestsWaitingApprovedEvtMsg](envelope, jsonNode)
+      case GuestPolicyChangedEvtMsg.NAME =>
+        route[GuestPolicyChangedEvtMsg](envelope, jsonNode)
+      case RecordingChapterBreakSysMsg.NAME =>
+        route[RecordingChapterBreakSysMsg](envelope, jsonNode)
+      case SetPresentationDownloadableEvtMsg.NAME =>
+        route[SetPresentationDownloadableEvtMsg](envelope, jsonNode)
       case RecordingStatusChangedEvtMsg.NAME =>
         route[RecordingStatusChangedEvtMsg](envelope, jsonNode)
 

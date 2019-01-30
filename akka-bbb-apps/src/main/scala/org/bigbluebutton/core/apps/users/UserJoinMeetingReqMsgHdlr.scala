@@ -13,12 +13,12 @@ trait UserJoinMeetingReqMsgHdlr extends HandlerHelpers with BreakoutHdlrHelpers 
   val outGW: OutMsgRouter
 
   def handleUserJoinMeetingReqMsg(msg: UserJoinMeetingReqMsg, state: MeetingState2x): MeetingState2x = {
-    log.info("Received user joined meeting. user " + msg.body.userId + " meetingId=" + msg.header.meetingId)
+    log.info("Received user joined meeting. user {} meetingId={}", msg.body.userId, msg.header.meetingId)
 
     Users2x.findWithIntId(liveMeeting.users2x, msg.body.userId) match {
       case Some(reconnectingUser) =>
         if (reconnectingUser.userLeftFlag.left) {
-          log.info("Resetting flag that user left meeting. user " + msg.body.userId)
+          log.info("Resetting flag that user left meeting. user {}", msg.body.userId)
           // User has reconnected. Just reset it's flag. ralam Oct 23, 2018
           Users2x.resetUserLeftFlag(liveMeeting.users2x, msg.body.userId)
         }

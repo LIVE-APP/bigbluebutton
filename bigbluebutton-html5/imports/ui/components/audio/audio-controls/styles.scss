@@ -1,14 +1,15 @@
 @import "/imports/ui/stylesheets/variables/_all";
+@import "/imports/ui/components/actions-bar/styles.scss";
 
 .container {
   display: flex;
   flex-flow: row;
 
   > * {
-    margin: 0 $sm-padding-x;
+    margin: 0 var(--sm-padding-x);
 
     @include mq($small-only) {
-      margin: 0 $sm-padding-y;
+      margin: 0 var(--sm-padding-y);
     }
 
     span:first-child {
@@ -46,4 +47,8 @@
   100% {
     box-shadow: 0 0 0 0 transparent;
   }
+}
+
+.ghostButton {
+  @extend .btn;
 }

@@ -2,21 +2,23 @@
 
 .actionsbar,
 .left,
-.center {
+.center,
+.right {
   display: flex;
   flex-direction: row;
 }
 
 .left,
-.center {
+.center,
+.right {
   flex: 1;
   justify-content: center;
 
   > * {
-    margin: 0 $sm-padding-x;
+    margin: 0 var(--sm-padding-x);
 
     @include mq($small-only) {
-      margin: 0 $sm-padding-y;
+      margin: 0 var(--sm-padding-y);
     }
   }
 }
@@ -24,9 +26,15 @@
 .left {
   position: absolute;
   @include mq($small-only) {
-    bottom: $sm-padding-x;
-    left: $sm-padding-x;
+    bottom: var(--sm-padding-x);
+    left: var(--sm-padding-x);
   }
+}
+
+.right {
+  position: absolute;
+  bottom: var(--sm-padding-x);
+  right: var(--sm-padding-x);
 }
 
 .centerWithActions {
@@ -42,5 +50,19 @@
 
   span:first-child {
     box-shadow: 0 2px 5px 0 rgb(0, 0, 0);
+  }
+}
+
+.btn {
+  span {
+    border: none;
+    box-shadow: none;
+    background-color: transparent !important;
+    color: var(--color-white) !important;
+    border: 1.5px solid var(--color-white) !important;
+  }
+
+  span:hover {
+    border: 1.5px solid rgba(255,255,255, .5) !important;
   }
 }

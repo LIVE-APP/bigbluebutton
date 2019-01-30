@@ -4,7 +4,9 @@ import { styles } from './styles.scss';
 import DesktopShare from './desktop-share/component';
 import ActionsDropdown from './actions-dropdown/component';
 import AudioControlsContainer from '../audio/audio-controls/container';
-import JoinVideoOptionsContainer from '../video-provider/video-menu/container';
+import JoinVideoOptionsContainer from '../video-provider/video-button/container';
+
+import PresentationOptionsContainer from './presentation-options/component';
 
 class ActionsBar extends React.PureComponent {
   render() {
@@ -18,6 +20,19 @@ class ActionsBar extends React.PureComponent {
       isUserModerator,
       recordSettingsList,
       toggleRecording,
+      screenSharingCheck,
+      enableVideo,
+      createBreakoutRoom,
+      meetingIsBreakout,
+      hasBreakoutRoom,
+      meetingName,
+      users,
+      isLayoutSwapped,
+      toggleSwapLayout,
+      getUsersNotAssigned,
+      sendInvitation,
+      getBreakouts,
+      handleTakePresenter,
     } = this.props;
 
     const {
@@ -27,6 +42,8 @@ class ActionsBar extends React.PureComponent {
     } = recordSettingsList;
 
     const actionBarClasses = {};
+    const { enableExternalVideo } = Meteor.settings.public.app;
+
     actionBarClasses[styles.centerWithActions] = isUserPresenter;
     actionBarClasses[styles.center] = true;
 
@@ -37,13 +54,27 @@ class ActionsBar extends React.PureComponent {
             isUserPresenter,
             isUserModerator,
             allowStartStopRecording,
+            allowExternalVideo: enableExternalVideo,
             isRecording,
             record,
             toggleRecording,
+            createBreakoutRoom,
+            meetingIsBreakout,
+            hasBreakoutRoom,
+            meetingName,
+            users,
+            getUsersNotAssigned,
+            sendInvitation,
+            getBreakouts,
+            handleTakePresenter,
           }}
           />
         </div>
-        <div className={isUserPresenter ? cx(styles.centerWithActions, actionBarClasses) : styles.center}>
+        <div
+          className={
+            isUserPresenter ? cx(styles.centerWithActions, actionBarClasses) : styles.center
+          }
+        >
           <AudioControlsContainer />
           {/* livetutorEdu Changes for Webcam only for presenter*/}
           {/*isUserPresenter && Meteor.settings.public.kurento.enableVideo ?*/}
@@ -52,14 +83,33 @@ class ActionsBar extends React.PureComponent {
               handleJoinVideo={handleJoinVideo}
               handleCloseVideo={handleExitVideo}
             />
+
+          {enableVideo
+            ? (
+              <JoinVideoOptionsContainer
+                handleJoinVideo={handleJoinVideo}
+                handleCloseVideo={handleExitVideo}
+              />
+            )
             : null}
           <DesktopShare {...{
-              handleShareScreen,
-              handleUnshareScreen,
-              isVideoBroadcasting,
-              isUserPresenter,
-            }}
+            handleShareScreen,
+            handleUnshareScreen,
+            isVideoBroadcasting,
+            isUserPresenter,
+            screenSharingCheck,
+          }}
           />
+        </div>
+        <div className={styles.right}>
+          { isLayoutSwapped
+            ? (
+              <PresentationOptionsContainer
+                toggleSwapLayout={toggleSwapLayout}
+              />
+            )
+            : null
+          }
         </div>
       </div>
     );

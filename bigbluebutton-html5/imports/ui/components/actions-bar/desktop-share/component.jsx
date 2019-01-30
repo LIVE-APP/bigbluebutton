@@ -5,6 +5,7 @@ import browser from 'browser-detect';
 import Button from '/imports/ui/components/button/component';
 import logger from '/imports/startup/client/logger';
 import { notify } from '/imports/ui/services/notification';
+import cx from 'classnames';
 import { styles } from '../styles';
 
 const propTypes = {
@@ -13,6 +14,7 @@ const propTypes = {
   handleShareScreen: PropTypes.func.isRequired,
   handleUnshareScreen: PropTypes.func.isRequired,
   isVideoBroadcasting: PropTypes.bool.isRequired,
+  screenSharingCheck: PropTypes.bool.isRequired,
 };
 
 const intlMessages = defineMessages({
@@ -43,7 +45,7 @@ const isMobileBrowser = (BROWSER_RESULTS ? BROWSER_RESULTS.mobile : false) ||
   (BROWSER_RESULTS && BROWSER_RESULTS.os ?
     BROWSER_RESULTS.os.includes('Android') : // mobile flag doesn't always work
     false);
-const screenSharingCheck = Meteor.settings.public.kurento.enableScreensharing;
+
 const ICE_CONNECTION_FAILED = 'ICE connection failed';
 
 const DesktopShare = ({
@@ -52,6 +54,7 @@ const DesktopShare = ({
   handleUnshareScreen,
   isVideoBroadcasting,
   isUserPresenter,
+  screenSharingCheck,
 }) => {
   const onFail = (error) => {
     switch (error) {
@@ -66,14 +69,14 @@ const DesktopShare = ({
   };
   return (screenSharingCheck && !isMobileBrowser && isUserPresenter ?
     <Button
-      className={styles.button}
-      icon={isVideoBroadcasting ? 'desktop_off' : 'desktop'}
+      className={cx(styles.button, isVideoBroadcasting || styles.btn)}
+      icon={isVideoBroadcasting ? 'desktop' : 'desktop_off'}
       label={intl.formatMessage(isVideoBroadcasting ?
           intlMessages.stopDesktopShareLabel : intlMessages.desktopShareLabel)}
       description={intl.formatMessage(isVideoBroadcasting ?
           intlMessages.stopDesktopShareDesc : intlMessages.desktopShareDesc)}
-      color={isVideoBroadcasting ? 'danger' : 'primary'}
-      ghost={false}
+      color={isVideoBroadcasting ? 'primary' : 'default'}
+      ghost={!isVideoBroadcasting}
       hideLabel
       circle
       size="lg"

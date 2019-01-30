@@ -1,7 +1,6 @@
 package org.bigbluebutton.core.domain
 
 import org.bigbluebutton.core.UnitSpec
-import org.bigbluebutton.core.running.MeetingExpiryTrackerHelper
 import org.bigbluebutton.core.util.TimeUtil
 
 class MeetingInactivityTrackerTests extends UnitSpec {
@@ -18,7 +17,7 @@ class MeetingInactivityTrackerTests extends UnitSpec {
     )
 
     val active = inactivityTracker.isMeetingInactive(nowInMinutes)
-    assert(active == false)
+    assert(active == true)
   }
 
   "A MeetingInactivityTrackerHelper" should "be return meeting is active" in {
